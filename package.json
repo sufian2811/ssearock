@@ -2,7 +2,21 @@
   "name": "searock-crm",
   "private": true,
   "type": "module",
+  "scripts": {
+    "dev": "concurrently -n backend,frontend -c green,blue \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "build": "npm run build --prefix frontend",
+    "start": "npm run start --prefix backend"
+  },
   "dependencies": {
-    "serverless-http": "^3.2.0"
+    "@supabase/supabase-js": "^2.49.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.2.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
   }
 }

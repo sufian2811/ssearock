@@ -8,21 +8,22 @@ export function setAuthToken(token) {
 
 async function parseResponse(res) {
   const text = await res.text();
+
   if (!text) {
-    if (!res.ok) {
+    if (res.status === 404) {
       throw new Error(
-        res.status === 404
-          ? 'API not found. Backend may not be deployed. Set VITE_API_URL in Vercel env vars.'
-          : `Server error (${res.status}). Check backend is running and env vars are set.`
+        'Backend API not found. Deploy the backend on Render/Railway and set VITE_API_URL in Vercel environment variables.'
       );
     }
-    return {};
+    throw new Error(`Server returned empty response (${res.status})`);
   }
 
   try {
     return JSON.parse(text);
   } catch {
-    throw new Error('Server returned an invalid response. Check backend deployment and API URL.');
+    throw new Error(
+      'Cannot reach backend API. Set VITE_API_URL in Vercel to your deployed backend URL (e.g. https://your-app.onrender.com/api).'
+    );
   }
 }
 
@@ -36,12 +37,14 @@ async function request(path, options = {}) {
   try {
     res = await fetch(`${API_URL}${path}`, { ...options, headers });
   } catch {
-    throw new Error('Cannot reach API server. Check your internet connection and backend URL.');
+    throw new Error(
+      'Cannot connect to backend. Deploy backend on Render/Railway and set VITE_API_URL in Vercel.'
+    );
   }
 
   const data = await parseResponse(res);
   if (!res.ok && res.status !== 207) {
-    throw new Error(data.error || data.warning || `Request failed (${res.status})`);
+    throw new Error(data.error || data.warning || 'Request failed');
   }
   return data;
 }
@@ -68,6 +71,7 @@ export const api = {
       formData.append('file', file);
       const headers = {};
       if (authToken) headers.Authorization = `Bearer ${authToken}`;
+
       let res;
       try {
         res = await fetch(`${API_URL}/leads/upload`, {
@@ -76,8 +80,9 @@ export const api = {
           body: formData,
         });
       } catch {
-        throw new Error('Cannot reach API server for file upload.');
+        throw new Error('Cannot connect to backend for file upload.');
       }
+
       const data = await parseResponse(res);
       if (!res.ok) throw new Error(data.error || 'Upload failed');
       return data;

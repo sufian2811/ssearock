@@ -9,21 +9,29 @@ import webhookRouter from './routes/webhook.js';
 
 const app = express();
 
-const allowedOrigins = [
-  config.frontendUrl,
-  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
-  'http://localhost:5173',
-].filter(Boolean);
+const allowedOrigins = (config.frontendUrl || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+if (process.env.VERCEL_URL) {
+  allowedOrigins.push(`https://${process.env.VERCEL_URL}`);
+}
 
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+  origin(origin, callback) {
+    if (
+      !origin ||
+      allowedOrigins.includes(origin) ||
+      origin.endsWith('.vercel.app')
+    ) {
       callback(null, true);
     } else {
       callback(null, true);
     }
   },
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
