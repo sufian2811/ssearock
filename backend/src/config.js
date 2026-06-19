@@ -12,7 +12,8 @@ export const config = {
     verifyToken: process.env.WHATSAPP_VERIFY_TOKEN,
     apiVersion: process.env.WHATSAPP_API_VERSION || 'v21.0',
   },
-  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+  frontendUrl: process.env.FRONTEND_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:5173'),
   jwtSecret: process.env.JWT_SECRET || 'searock-crm-dev-secret',
   admin: {
     email: process.env.ADMIN_EMAIL || 'ssearockcrm@gmail.com',

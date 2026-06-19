@@ -6,15 +6,43 @@ export function setAuthToken(token) {
   authToken = token;
 }
 
+async function parseResponse(res) {
+  const text = await res.text();
+  if (!text) {
+    if (!res.ok) {
+      throw new Error(
+        res.status === 404
+          ? 'API not found. Backend may not be deployed. Set VITE_API_URL in Vercel env vars.'
+          : `Server error (${res.status}). Check backend is running and env vars are set.`
+      );
+    }
+    return {};
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error('Server returned an invalid response. Check backend deployment and API URL.');
+  }
+}
+
 async function request(path, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...options.headers };
   if (authToken) {
     headers.Authorization = `Bearer ${authToken}`;
   }
 
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
-  const data = await res.json();
-  if (!res.ok && res.status !== 207) throw new Error(data.error || data.warning || 'Request failed');
+  let res;
+  try {
+    res = await fetch(`${API_URL}${path}`, { ...options, headers });
+  } catch {
+    throw new Error('Cannot reach API server. Check your internet connection and backend URL.');
+  }
+
+  const data = await parseResponse(res);
+  if (!res.ok && res.status !== 207) {
+    throw new Error(data.error || data.warning || `Request failed (${res.status})`);
+  }
   return data;
 }
 
@@ -40,12 +68,17 @@ export const api = {
       formData.append('file', file);
       const headers = {};
       if (authToken) headers.Authorization = `Bearer ${authToken}`;
-      const res = await fetch(`${API_URL}/leads/upload`, {
-        method: 'POST',
-        headers,
-        body: formData,
-      });
-      const data = await res.json();
+      let res;
+      try {
+        res = await fetch(`${API_URL}/leads/upload`, {
+          method: 'POST',
+          headers,
+          body: formData,
+        });
+      } catch {
+        throw new Error('Cannot reach API server for file upload.');
+      }
+      const data = await parseResponse(res);
       if (!res.ok) throw new Error(data.error || 'Upload failed');
       return data;
     },
